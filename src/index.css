@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #0A0A0A;
+  --bg-secondary: #121212;
+  --bg-tertiary: #141414;
+  --bg-quaternary: #1A1A1A;
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --border-secondary: rgba(255, 255, 255, 0.05);
+  --accent: #FF6321;
+}
+
+.light {
+  --bg-primary: #FAF9F6; /* Warm alabaster/parchment white */
+  --bg-secondary: #FFFFFF; /* Pure white for content cards */
+  --bg-tertiary: #F3F2EE; /* Soft grey-beige */
+  --bg-quaternary: #EAE8E2; /* Slightly darker warm gray */
+  --text-primary: #1C1A17; /* Charcoal/coal black */
+  --text-secondary: rgba(28, 26, 23, 0.75);
+  --text-muted: rgba(28, 26, 23, 0.5);
+  --border-primary: rgba(28, 26, 23, 0.15);
+  --border-secondary: rgba(28, 26, 23, 0.08);
+  --accent: #D4440C; /* Elegant deep brick/warm orange */
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-theme-bg: var(--bg-primary);
+  --color-theme-card: var(--bg-secondary);
+  --color-theme-tertiary: var(--bg-tertiary);
+  --color-theme-quaternary: var(--bg-quaternary);
+  
+  --color-theme-text: var(--text-primary);
+  --color-theme-text-sub: var(--text-secondary);
+  --color-theme-text-muted: var(--text-muted);
+  
+  --color-theme-border: var(--border-primary);
+  --color-theme-border-subtle: var(--border-secondary);
+  
+  --color-accent: var(--accent);
+}
+
+/* Smooth transitions for theme toggle */
+*, *::before, *::after {
+  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, opacity 0.4s ease;
+}
+
+/* Exclude images from transitions */
+img {
+  transition: transform 0.6s ease-out, opacity 0.4s ease !important;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Custom scrollbar styling for sleek modern feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-quaternary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}

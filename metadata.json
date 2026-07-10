@@ -1,0 +1,6 @@
+{
+  "name": "ÉLOQUENCE Magazine",
+  "description": "A luxury, high-end editorial and lifestyle magazine featuring fashion, wellness, travel, culture, and future-forward design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
