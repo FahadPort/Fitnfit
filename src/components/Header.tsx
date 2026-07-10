@@ -35,6 +35,8 @@ export default function Header({
   onBackToHome,
   isReadingArticle,
   categories: customCategories,
+  isAdminOpen,
+  onToggleAdmin,
   theme = 'dark',
   onToggleTheme,
   settings,
@@ -179,6 +181,20 @@ export default function Header({
                 </button>
               ))}
             </nav>
+          )}
+
+          {/* Admin Studio Toggle */}
+          {onToggleAdmin && (
+            <button
+              onClick={onToggleAdmin}
+              className={`hidden sm:inline-block font-mono text-[9.5px] uppercase tracking-[0.18em] px-3 py-1.5 border cursor-pointer transition-all ${
+                isAdminOpen 
+                  ? 'bg-accent/20 border-accent text-accent font-semibold' 
+                  : 'border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-text/30'
+              }`}
+            >
+              {isAdminOpen ? 'Close Admin' : 'Admin'}
+            </button>
           )}
 
           {/* Light / Dark Mode Toggle */}
@@ -369,6 +385,21 @@ export default function Header({
                       {cat}
                     </button>
                   ))}
+                  
+                  {/* Admin Toggle in Mobile Menu */}
+                  {onToggleAdmin && (
+                    <button
+                      onClick={() => {
+                        onToggleAdmin();
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`text-left font-serif text-xl py-1 cursor-pointer transition-all ${
+                        isAdminOpen ? 'text-accent italic pl-2 font-bold' : 'text-theme-text hover:text-accent'
+                      }`}
+                    >
+                      🛠️ {isAdminOpen ? 'Close Admin Studio' : 'Admin Studio'}
+                    </button>
+                  )}
                   
                   {/* Light / Dark Mode Toggle in Mobile Menu */}
                   <div className="border-t border-theme-border-subtle pt-4 mt-2 flex justify-start">
