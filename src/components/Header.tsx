@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Bookmark, Menu, X, ArrowLeft, Heart, Sun, Moon } from 'lucide-react';
+import { Search, Bookmark, Menu, X, ArrowLeft, Heart, User, LogOut, ShieldCheck } from 'lucide-react';
 import { Article } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -15,8 +15,9 @@ interface HeaderProps {
   categories?: string[];
   isAdminOpen?: boolean;
   onToggleAdmin?: () => void;
-  theme?: 'dark' | 'light';
-  onToggleTheme?: () => void;
+  isAuthenticated: boolean;
+  onOpenLogin: () => void;
+  onLogout: () => void;
   settings?: {
     logoText: string;
     logoSubtext: string;
@@ -37,14 +38,16 @@ export default function Header({
   categories: customCategories,
   isAdminOpen,
   onToggleAdmin,
-  theme = 'dark',
-  onToggleTheme,
+  isAuthenticated,
+  onOpenLogin,
+  onLogout,
   settings,
 }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   // Track scroll position for header styling
   useEffect(() => {
@@ -183,32 +186,75 @@ export default function Header({
             </nav>
           )}
 
-          {/* Admin Studio Toggle */}
-          {onToggleAdmin && (
+          {/* User Account / Admin Action */}
+          <div className="relative">
             <button
-              onClick={onToggleAdmin}
-              className={`hidden sm:inline-block font-mono text-[9.5px] uppercase tracking-[0.18em] px-3 py-1.5 border cursor-pointer transition-all ${
-                isAdminOpen 
-                  ? 'bg-accent/20 border-accent text-accent font-semibold' 
-                  : 'border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-text/30'
+              onClick={() => {
+                if (isAuthenticated) {
+                  setProfileMenuOpen(!profileMenuOpen);
+                } else {
+                  onOpenLogin();
+                }
+              }}
+              className={`p-1.5 rounded-full transition-all hover:bg-theme-tertiary cursor-pointer flex items-center gap-1 ${
+                isAuthenticated ? 'text-accent' : 'text-theme-text hover:text-accent'
               }`}
+              title={isAuthenticated ? "Account Menu" : "Sign In / Join Studio"}
+              aria-label="User Account"
             >
-              {isAdminOpen ? 'Close Admin' : 'Admin'}
+              <User className="w-[18px] h-[18px]" />
             </button>
-          )}
 
-          {/* Light / Dark Mode Toggle */}
-          <button
-            onClick={onToggleTheme}
-            className="flex items-center justify-center p-2 rounded-full transition-all hover:bg-theme-tertiary cursor-pointer text-theme-text"
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-[18px] h-[18px] text-accent" />
-            ) : (
-              <Moon className="w-[18px] h-[18px] text-accent" />
-            )}
-          </button>
+            {/* Profile Dropdown Menu */}
+            <AnimatePresence>
+              {isAuthenticated && profileMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setProfileMenuOpen(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                    className="absolute right-0 mt-3 w-56 bg-theme-tertiary border border-theme-border shadow-xl p-4 z-50 rounded-none text-left"
+                  >
+                    <div className="border-b border-theme-border pb-3 mb-3">
+                      <span className="font-mono text-[8px] uppercase tracking-wider text-accent block mb-0.5">
+                        Authenticated
+                      </span>
+                      <span className="text-xs font-serif text-theme-text truncate block font-medium">
+                        admin@eloquence.com
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      {onToggleAdmin && (
+                        <button
+                          onClick={() => {
+                            onToggleAdmin();
+                            setProfileMenuOpen(false);
+                          }}
+                          className="flex items-center gap-2 text-left text-xs font-mono uppercase tracking-widest text-theme-text hover:text-accent py-1.5 transition-colors cursor-pointer w-full"
+                        >
+                          <ShieldCheck className="w-4 h-4 text-accent" />
+                          <span>{isAdminOpen ? 'Close Studio' : 'Admin Studio'}</span>
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => {
+                          onLogout();
+                          setProfileMenuOpen(false);
+                        }}
+                        className="flex items-center gap-2 text-left text-xs font-mono uppercase tracking-widest text-theme-text-muted hover:text-rose-500 py-1.5 transition-colors cursor-pointer w-full"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Search trigger */}
           <div className="relative">
@@ -386,36 +432,54 @@ export default function Header({
                     </button>
                   ))}
                   
-                  {/* Admin Toggle in Mobile Menu */}
-                  {onToggleAdmin && (
-                    <button
-                      onClick={() => {
-                        onToggleAdmin();
-                        setMobileMenuOpen(false);
-                      }}
-                      className={`text-left font-serif text-xl py-1 cursor-pointer transition-all ${
-                        isAdminOpen ? 'text-accent italic pl-2 font-bold' : 'text-theme-text hover:text-accent'
-                      }`}
-                    >
-                      🛠️ {isAdminOpen ? 'Close Admin Studio' : 'Admin Studio'}
-                    </button>
-                  )}
-                  
-                  {/* Light / Dark Mode Toggle in Mobile Menu */}
-                  <div className="border-t border-theme-border-subtle pt-4 mt-2 flex justify-start">
-                    <button
-                      onClick={() => {
-                        if (onToggleTheme) onToggleTheme();
-                      }}
-                      className="p-2 rounded-full transition-all hover:bg-theme-card cursor-pointer text-theme-text flex items-center justify-center"
-                      title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                    >
-                      {theme === 'dark' ? (
-                        <Sun className="w-5 h-5 text-accent" />
-                      ) : (
-                        <Moon className="w-5 h-5 text-accent" />
-                      )}
-                    </button>
+                  {/* User Account actions in Mobile Menu */}
+                  <div className="border-t border-theme-border-subtle pt-5 mt-4 flex flex-col gap-4 text-left">
+                    {isAuthenticated ? (
+                      <>
+                        <div>
+                          <span className="font-mono text-[8px] uppercase tracking-wider text-accent font-semibold block mb-0.5">
+                            Signed In As
+                          </span>
+                          <span className="text-sm font-serif text-theme-text truncate block">
+                            admin@eloquence.com
+                          </span>
+                        </div>
+                        
+                        {onToggleAdmin && (
+                          <button
+                            onClick={() => {
+                              onToggleAdmin();
+                              setMobileMenuOpen(false);
+                            }}
+                            className={`text-left font-serif text-lg py-1 cursor-pointer transition-all ${
+                              isAdminOpen ? 'text-accent italic pl-2 font-bold' : 'text-theme-text hover:text-accent'
+                            }`}
+                          >
+                            🛠️ {isAdminOpen ? 'Close Admin Studio' : 'Admin Studio'}
+                          </button>
+                        )}
+                        
+                        <button
+                          onClick={() => {
+                            onLogout();
+                            setMobileMenuOpen(false);
+                          }}
+                          className="text-left font-serif text-lg py-1 cursor-pointer text-theme-text-muted hover:text-rose-500 transition-colors"
+                        >
+                          🚪 Sign Out
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          onOpenLogin();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="text-left font-serif text-xl py-1 cursor-pointer text-theme-text hover:text-accent transition-all flex items-center gap-2"
+                      >
+                        🔑 Sign In to Studio
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -8,6 +8,7 @@ import ArticleDetail from './components/ArticleDetail';
 import Newsletter from './components/Newsletter';
 import AIChatDrawer from './components/AIChatDrawer';
 import AdminPanel from './components/AdminPanel';
+import AuthModal from './components/AuthModal';
 import { Sparkles, Compass, BookOpen, Clock, Heart, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -19,23 +20,16 @@ export default function App() {
   const [isAssistantOpen, setIsAssistantOpen] = useState<boolean>(false);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
 
-  // Theme state: dark or light
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('eloquence_theme') as 'dark' | 'light') || 'dark';
+  // Authenticated state synced with localStorage
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('eloquence_admin_auth') === 'true';
   });
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
 
+  // Enforce premium dark theme & clean up light theme
   useEffect(() => {
-    if (theme === 'light') {
-      document.documentElement.classList.add('light');
-    } else {
-      document.documentElement.classList.remove('light');
-    }
-    localStorage.setItem('eloquence_theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  };
+    document.documentElement.classList.remove('light');
+  }, []);
 
   // Dynamic Full-Stack States
   const [articles, setArticles] = useState<Article[]>(initialArticles);
@@ -253,16 +247,21 @@ export default function App() {
         isReadingArticle={activeArticleId !== null}
         categories={categories}
         isAdminOpen={isAdminOpen}
-        onToggleAdmin={() => {
+        onToggleAdmin={isAuthenticated ? () => {
           if (isAdminOpen) {
             navigateTo('/');
           } else {
             navigateTo('/admin');
           }
           setActiveCategory('All');
+        } : undefined}
+        isAuthenticated={isAuthenticated}
+        onOpenLogin={() => setAuthModalOpen(true)}
+        onLogout={() => {
+          setIsAuthenticated(false);
+          localStorage.removeItem('eloquence_admin_auth');
+          navigateTo('/');
         }}
-        theme={theme}
-        onToggleTheme={toggleTheme}
         settings={settings}
       />
 
@@ -286,6 +285,11 @@ export default function App() {
                 onRefreshArticles={fetchArticles}
                 onRefreshCategories={fetchCategories}
                 onRefreshSettings={fetchSettings}
+                onLogout={() => {
+                  setIsAuthenticated(false);
+                  localStorage.removeItem('eloquence_admin_auth');
+                  navigateTo('/');
+                }}
               />
             </motion.div>
           ) : activeArticle ? (
@@ -644,6 +648,16 @@ export default function App() {
         isOpen={isAssistantOpen}
         onClose={() => setIsAssistantOpen(false)}
         article={activeArticle}
+      />
+
+      {/* Account Login Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onLoginSuccess={() => {
+          setIsAuthenticated(true);
+          navigateTo('/admin');
+        }}
       />
 
       {/* Common Footer */}

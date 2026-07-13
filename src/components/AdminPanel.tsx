@@ -19,6 +19,7 @@ interface AdminPanelProps {
   onRefreshArticles: () => void;
   onRefreshCategories: () => void;
   onRefreshSettings: () => void;
+  onLogout?: () => void;
 }
 
 export default function AdminPanel({
@@ -29,6 +30,7 @@ export default function AdminPanel({
   onRefreshArticles,
   onRefreshCategories,
   onRefreshSettings,
+  onLogout,
 }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'settings'>('articles');
   
@@ -56,6 +58,7 @@ export default function AdminPanel({
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('eloquence_admin_auth');
+    if (onLogout) onLogout();
   };
   
   // Article form state
