@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Article, Author } from '../types';
+import { storageService } from '../utils/storageHelper';
 import { 
   Plus, Trash2, Edit3, Save, Upload, X, Check, Grid, 
   Image as ImageIcon, FileText, Settings, User, Globe, 
@@ -64,8 +65,8 @@ export default function AdminPanel({
   // Load stores and coupons
   const fetchStores = async () => {
     try {
-      const res = await fetch('/api/stores');
-      if (res.ok) setStores(await res.json());
+      const data = await storageService.getStores();
+      setStores(data);
     } catch (err) {
       console.error(err);
     }
@@ -73,8 +74,8 @@ export default function AdminPanel({
 
   const fetchCoupons = async () => {
     try {
-      const res = await fetch('/api/coupons');
-      if (res.ok) setCoupons(await res.json());
+      const data = await storageService.getCoupons();
+      setCoupons(data);
     } catch (err) {
       console.error(err);
     }
@@ -104,31 +105,13 @@ export default function AdminPanel({
     };
 
     try {
-      let url = '/api/stores';
-      let method = 'POST';
-
-      if (!isCreatingStore && editingStore) {
-        url = `/api/stores/${editingStore.id}`;
-        method = 'PUT';
-      }
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(storePayload)
-      });
-
-      if (response.ok) {
-        await fetchStores();
-        setIsCreatingStore(false);
-        setEditingStore(null);
-        resetStoreForm();
-      } else {
-        const errData = await response.json();
-        alert('Failed to save store: ' + (errData.error || 'Server error'));
-      }
+      await storageService.saveStore(storePayload, !isCreatingStore && editingStore ? editingStore.id : undefined);
+      await fetchStores();
+      setIsCreatingStore(false);
+      setEditingStore(null);
+      resetStoreForm();
     } catch (err: any) {
-      alert('Network error saving store: ' + err.message);
+      alert('Error saving store: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -157,13 +140,9 @@ export default function AdminPanel({
   const handleDeleteStore = async (id: string) => {
     if (!confirm('Are you sure you want to delete this store? All associated coupons will be deleted.')) return;
     try {
-      const response = await fetch(`/api/stores/${id}`, { method: 'DELETE' });
-      if (response.ok) {
-        fetchStores();
-        fetchCoupons(); // Cascaded delete check
-      } else {
-        alert('Failed to delete store');
-      }
+      await storageService.deleteStore(id);
+      await fetchStores();
+      await fetchCoupons(); // Cascaded delete check
     } catch (err: any) {
       alert('Error deleting store: ' + err.message);
     }
@@ -194,31 +173,13 @@ export default function AdminPanel({
     };
 
     try {
-      let url = '/api/coupons';
-      let method = 'POST';
-
-      if (!isCreatingCoupon && editingCoupon) {
-        url = `/api/coupons/${editingCoupon.id}`;
-        method = 'PUT';
-      }
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(couponPayload)
-      });
-
-      if (response.ok) {
-        await fetchCoupons();
-        setIsCreatingCoupon(false);
-        setEditingCoupon(null);
-        resetCouponForm();
-      } else {
-        const errData = await response.json();
-        alert('Failed to save coupon: ' + (errData.error || 'Server error'));
-      }
+      await storageService.saveCoupon(couponPayload, !isCreatingCoupon && editingCoupon ? editingCoupon.id : undefined);
+      await fetchCoupons();
+      setIsCreatingCoupon(false);
+      setEditingCoupon(null);
+      resetCouponForm();
     } catch (err: any) {
-      alert('Network error saving coupon: ' + err.message);
+      alert('Error saving coupon: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -251,12 +212,8 @@ export default function AdminPanel({
   const handleDeleteCoupon = async (id: string) => {
     if (!confirm('Are you sure you want to delete this coupon?')) return;
     try {
-      const response = await fetch(`/api/coupons/${id}`, { method: 'DELETE' });
-      if (response.ok) {
-        fetchCoupons();
-      } else {
-        alert('Failed to delete coupon');
-      }
+      await storageService.deleteCoupon(id);
+      await fetchCoupons();
     } catch (err: any) {
       alert('Error deleting coupon: ' + err.message);
     }
@@ -480,25 +437,39 @@ export default function AdminPanel({
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64String = reader.result as string;
-        
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: file.name,
-            data: base64String
-          })
-        });
+        let finalUrl = base64String;
 
-        const data = await response.json();
-        if (response.ok && data.url) {
-          if (target === 'image') setImage(data.url);
-          if (target === 'avatar') setAuthorAvatar(data.url);
-          if (target === 'logo') setLogoUrl(data.url);
-          if (target === 'storeLogo') setStoreLogo(data.url);
-        } else {
-          alert('Upload failed: ' + (data.error || 'Unknown error'));
+        try {
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: file.name,
+              data: base64String
+            })
+          });
+
+          if (response.ok) {
+            const textResponse = await response.text();
+            try {
+              const data = JSON.parse(textResponse);
+              if (data.url) {
+                finalUrl = data.url;
+              }
+            } catch (jsonErr) {
+              console.warn('Upload API responded with invalid JSON, falling back to base64 image URL:', jsonErr);
+            }
+          } else {
+            console.warn('Upload API returned non-OK status, falling back to base64 image URL.');
+          }
+        } catch (uploadErr) {
+          console.warn('Network upload failed, falling back to base64 image URL:', uploadErr);
         }
+
+        if (target === 'image') setImage(finalUrl);
+        if (target === 'avatar') setAuthorAvatar(finalUrl);
+        if (target === 'logo') setLogoUrl(finalUrl);
+        if (target === 'storeLogo') setStoreLogo(finalUrl);
         
         setUploadingImage(false);
         setUploadingAvatar(false);
@@ -509,7 +480,6 @@ export default function AdminPanel({
       reader.readAsDataURL(file);
     } catch (err: any) {
       console.error('File upload error', err);
-      alert('Upload failed: ' + err.message);
       setUploadingImage(false);
       setUploadingAvatar(false);
       setUploadingLogo(false);
@@ -546,30 +516,12 @@ export default function AdminPanel({
     };
 
     try {
-      let url = '/api/articles';
-      let method = 'POST';
-
-      if (!isCreating && editingArticle) {
-        url = `/api/articles/${editingArticle.id}`;
-        method = 'PUT';
-      }
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(articlePayload)
-      });
-
-      if (response.ok) {
-        onRefreshArticles();
-        setIsCreating(false);
-        setEditingArticle(null);
-      } else {
-        const errData = await response.json();
-        alert('Failed to save article: ' + (errData.error || 'Server error'));
-      }
+      await storageService.saveArticle(articlePayload, !isCreating && editingArticle ? editingArticle.id : undefined);
+      onRefreshArticles();
+      setIsCreating(false);
+      setEditingArticle(null);
     } catch (err: any) {
-      alert('Network error saving article: ' + err.message);
+      alert('Error saving article: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -580,19 +532,13 @@ export default function AdminPanel({
     if (!confirm('Are you sure you want to delete this article?')) return;
     
     try {
-      const response = await fetch(`/api/articles/${id}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        onRefreshArticles();
-        if (editingArticle?.id === id) {
-          setEditingArticle(null);
-        }
-      } else {
-        alert('Failed to delete article');
+      await storageService.deleteArticle(id);
+      onRefreshArticles();
+      if (editingArticle?.id === id) {
+        setEditingArticle(null);
       }
     } catch (err: any) {
-      alert('Network error: ' + err.message);
+      alert('Error deleting article: ' + err.message);
     }
   };
 
@@ -602,20 +548,11 @@ export default function AdminPanel({
     if (!newCategoryName.trim()) return;
 
     try {
-      const response = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category: newCategoryName.trim() })
-      });
-
-      if (response.ok) {
-        onRefreshCategories();
-        setNewCategoryName('');
-      } else {
-        alert('Failed to add category');
-      }
+      await storageService.saveCategory(newCategoryName.trim());
+      onRefreshCategories();
+      setNewCategoryName('');
     } catch (err: any) {
-      alert('Network error: ' + err.message);
+      alert('Error adding category: ' + err.message);
     }
   };
 
@@ -628,17 +565,10 @@ export default function AdminPanel({
     }
 
     try {
-      const response = await fetch(`/api/categories/${encodeURIComponent(catName)}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        onRefreshCategories();
-      } else {
-        alert('Failed to delete category');
-      }
+      await storageService.deleteCategory(catName);
+      onRefreshCategories();
     } catch (err: any) {
-      alert('Network error: ' + err.message);
+      alert('Error deleting category: ' + err.message);
     }
   };
 
@@ -648,29 +578,20 @@ export default function AdminPanel({
     setSaving(true);
 
     try {
-      const response = await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          logoText,
-          logoSubtext,
-          siteTitle,
-          logoUrl
-        })
+      await storageService.saveSettings({
+        logoText,
+        logoSubtext,
+        siteTitle,
+        logoUrl
       });
-
-      if (response.ok) {
-        onRefreshSettings();
-        // Update document title dynamically
-        if (siteTitle) {
-          document.title = siteTitle;
-        }
-        alert('Settings saved successfully!');
-      } else {
-        alert('Failed to save settings');
+      onRefreshSettings();
+      // Update document title dynamically
+      if (siteTitle) {
+        document.title = siteTitle;
       }
+      alert('Settings saved successfully!');
     } catch (err: any) {
-      alert('Network error: ' + err.message);
+      alert('Error saving settings: ' + err.message);
     } finally {
       setSaving(false);
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { articles as initialArticles } from './data/articles';
 import { Article, Store, Coupon } from './types';
+import { storageService } from './utils/storageHelper';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ArticleCard from './components/ArticleCard';
@@ -41,24 +42,18 @@ export default function App() {
   // Fetch articles from full-stack endpoint
   const fetchArticles = async () => {
     try {
-      const res = await fetch('/api/articles');
-      if (res.ok) {
-        const data = await res.json();
-        setArticles(data);
-      }
+      const data = await storageService.getArticles();
+      setArticles(data);
     } catch (err) {
-      console.error('Failed to load articles from API', err);
+      console.error('Failed to load articles', err);
     }
   };
 
   // Fetch categories
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/api/categories');
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(data);
-      }
+      const data = await storageService.getCategories();
+      setCategories(data);
     } catch (err) {
       console.error('Failed to load categories', err);
     }
@@ -67,13 +62,10 @@ export default function App() {
   // Fetch site branding settings
   const fetchSettings = async () => {
     try {
-      const res = await fetch('/api/settings');
-      if (res.ok) {
-        const data = await res.json();
-        setSettings(data);
-        if (data.siteTitle) {
-          document.title = data.siteTitle;
-        }
+      const data = await storageService.getSettings();
+      setSettings(data);
+      if (data.siteTitle) {
+        document.title = data.siteTitle;
       }
     } catch (err) {
       console.error('Failed to load settings', err);
@@ -87,11 +79,8 @@ export default function App() {
   // Fetch stores
   const fetchStores = async () => {
     try {
-      const res = await fetch('/api/stores');
-      if (res.ok) {
-        const data = await res.json();
-        setStores(data);
-      }
+      const data = await storageService.getStores();
+      setStores(data);
     } catch (err) {
       console.error('Failed to load stores', err);
     }
@@ -100,11 +89,8 @@ export default function App() {
   // Fetch coupons
   const fetchCoupons = async () => {
     try {
-      const res = await fetch('/api/coupons');
-      if (res.ok) {
-        const data = await res.json();
-        setCoupons(data);
-      }
+      const data = await storageService.getCoupons();
+      setCoupons(data);
     } catch (err) {
       console.error('Failed to load coupons', err);
     }
@@ -113,13 +99,8 @@ export default function App() {
   // Record coupon usage
   const handleUseCoupon = async (couponId: string) => {
     try {
-      const res = await fetch(`/api/coupons/${couponId}/use`, {
-        method: 'POST',
-      });
-      if (res.ok) {
-        // Refresh coupons to update the counter
-        fetchCoupons();
-      }
+      await storageService.useCoupon(couponId);
+      fetchCoupons();
     } catch (err) {
       console.error('Failed to update coupon use count', err);
     }
