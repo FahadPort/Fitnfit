@@ -440,14 +440,20 @@ export default function AdminPanel({
         let finalUrl = base64String;
 
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
+
           const response = await fetch('/api/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               name: file.name,
               data: base64String
-            })
+            }),
+            signal: controller.signal
           });
+
+          clearTimeout(timeoutId);
 
           if (response.ok) {
             const textResponse = await response.text();
@@ -463,7 +469,7 @@ export default function AdminPanel({
             console.warn('Upload API returned non-OK status, falling back to base64 image URL.');
           }
         } catch (uploadErr) {
-          console.warn('Network upload failed, falling back to base64 image URL:', uploadErr);
+          console.warn('Network upload failed or timed out, falling back to base64 image URL:', uploadErr);
         }
 
         if (target === 'image') setImage(finalUrl);
