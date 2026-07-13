@@ -31,32 +31,135 @@ interface Database {
     siteTitle: string;
     logoUrl: string;
   };
+  stores: any[];
+  coupons: any[];
 }
 
 function readDb(): Database {
+  let db: any;
   try {
     if (fs.existsSync(DB_FILE)) {
       const data = fs.readFileSync(DB_FILE, 'utf8');
-      return JSON.parse(data);
+      db = JSON.parse(data);
     }
   } catch (err) {
     console.error('Error reading db.json, using defaults:', err);
   }
 
-  // Initial database state if not present
-  const initialDb: Database = {
-    articles: defaultArticles,
-    categories: ['Wellness', 'Fashion', 'Travel', 'Culture', 'Lifestyle'],
-    settings: {
-      logoText: 'ÉLOQUENCE',
-      logoSubtext: "Journal d'un esprit calme",
-      siteTitle: "ÉLOQUENCE — Journal d'un esprit calme",
-      logoUrl: ''
+  const defaultStores = [
+    {
+      id: 'store-1',
+      name: 'Nordstrom',
+      slug: 'nordstrom',
+      logo: 'https://images.unsplash.com/photo-1511556532299-8f662fc26c06?auto=format&fit=crop&w=120&q=80',
+      description: 'Premium designer apparel, luxury footwear, fine jewelry, beauty products, and homeware.',
+      targetUrl: 'https://www.nordstrom.com',
+      category: 'Fashion',
+      featured: true
+    },
+    {
+      id: 'store-2',
+      name: 'Zara',
+      slug: 'zara',
+      logo: 'https://images.unsplash.com/photo-1520004430778-f8389bf0bc34?auto=format&fit=crop&w=120&q=80',
+      description: 'Sleek, minimalist fast-fashion garments and timeless modern aesthetics.',
+      targetUrl: 'https://www.zara.com',
+      category: 'Fashion',
+      featured: true
+    },
+    {
+      id: 'store-3',
+      name: 'Muji',
+      slug: 'muji',
+      logo: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=120&q=80',
+      description: 'Decelerated lifestyle designs, modular organizational items, and understated apparel.',
+      targetUrl: 'https://www.muji.com',
+      category: 'Wellness & Home',
+      featured: true
     }
-  };
-  
-  writeDb(initialDb);
-  return initialDb;
+  ];
+
+  const defaultCoupons = [
+    {
+      id: 'coupon-1',
+      storeId: 'store-1',
+      title: '50% Off Independence Day Sale',
+      discount: '50% OFF',
+      type: 'deal',
+      description: 'Save up to half-off on select summer styles, activewear, and luxury designer lines.',
+      targetUrl: 'https://www.nordstrom.com/sale',
+      verified: true,
+      usedCount: 5619
+    },
+    {
+      id: 'coupon-2',
+      storeId: 'store-1',
+      title: '$20 Off Storewide Anniversary Event',
+      discount: '$20 OFF',
+      type: 'code',
+      code: 'NORDST20',
+      description: 'Apply this code at checkout to enjoy $20 off on your order over $100.',
+      targetUrl: 'https://www.nordstrom.com',
+      verified: true,
+      usedCount: 1245
+    },
+    {
+      id: 'coupon-3',
+      storeId: 'store-2',
+      title: 'Get free delivery on your first order',
+      discount: 'FREE SHIP',
+      type: 'code',
+      code: 'ZARAFREE',
+      description: 'Unlock free standard shipping on orders containing new season styles.',
+      targetUrl: 'https://www.zara.com',
+      verified: true,
+      usedCount: 830
+    },
+    {
+      id: 'coupon-4',
+      storeId: 'store-3',
+      title: '15% Off Your Entire Minimalist Homeware Purchase',
+      discount: '15% OFF',
+      type: 'code',
+      code: 'MUJIMIN15',
+      description: 'Discover quiet organization solutions. Enter code to save 15%.',
+      targetUrl: 'https://www.muji.com',
+      verified: true,
+      usedCount: 3042
+    }
+  ];
+
+  if (!db) {
+    db = {
+      articles: defaultArticles,
+      categories: ['Wellness', 'Fashion', 'Travel', 'Culture', 'Lifestyle'],
+      settings: {
+        logoText: 'ÉLOQUENCE',
+        logoSubtext: "Journal d'un esprit calme",
+        siteTitle: "ÉLOQUENCE — Journal d'un esprit calme",
+        logoUrl: ''
+      },
+      stores: defaultStores,
+      coupons: defaultCoupons
+    };
+    writeDb(db);
+    return db;
+  }
+
+  let changed = false;
+  if (!db.stores) {
+    db.stores = defaultStores;
+    changed = true;
+  }
+  if (!db.coupons) {
+    db.coupons = defaultCoupons;
+    changed = true;
+  }
+  if (changed) {
+    writeDb(db);
+  }
+
+  return db;
 }
 
 function writeDb(data: Database) {
@@ -179,6 +282,141 @@ app.post('/api/settings', (req, res) => {
     db.settings = { ...db.settings, ...req.body };
     writeDb(db);
     res.json(db.settings);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Stores API
+app.get('/api/stores', (req, res) => {
+  const db = readDb();
+  res.json(db.stores || []);
+});
+
+app.post('/api/stores', (req, res) => {
+  try {
+    const db = readDb();
+    const newStore = {
+      id: 'store-' + Date.now().toString(),
+      ...req.body,
+      slug: req.body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+    };
+    if (!db.stores) db.stores = [];
+    db.stores.push(newStore);
+    writeDb(db);
+    res.status(201).json(newStore);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/stores/:id', (req, res) => {
+  try {
+    const db = readDb();
+    const { id } = req.params;
+    if (!db.stores) db.stores = [];
+    const index = db.stores.findIndex(s => s.id === id);
+    if (index === -1) {
+      res.status(404).json({ error: 'Store not found' });
+      return;
+    }
+    db.stores[index] = { 
+      ...db.stores[index], 
+      ...req.body, 
+      id,
+      slug: req.body.name ? req.body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : db.stores[index].slug
+    };
+    writeDb(db);
+    res.json(db.stores[index]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/stores/:id', (req, res) => {
+  try {
+    const db = readDb();
+    const { id } = req.params;
+    if (!db.stores) db.stores = [];
+    db.stores = db.stores.filter(s => s.id !== id);
+    if (db.coupons) {
+      db.coupons = db.coupons.filter(c => c.storeId !== id);
+    }
+    writeDb(db);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Coupons API
+app.get('/api/coupons', (req, res) => {
+  const db = readDb();
+  res.json(db.coupons || []);
+});
+
+app.post('/api/coupons', (req, res) => {
+  try {
+    const db = readDb();
+    const newCoupon = {
+      id: 'coupon-' + Date.now().toString(),
+      ...req.body,
+      usedCount: req.body.usedCount || 0,
+      verified: req.body.verified !== undefined ? req.body.verified : true
+    };
+    if (!db.coupons) db.coupons = [];
+    db.coupons.push(newCoupon);
+    writeDb(db);
+    res.status(201).json(newCoupon);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/coupons/:id', (req, res) => {
+  try {
+    const db = readDb();
+    const { id } = req.params;
+    if (!db.coupons) db.coupons = [];
+    const index = db.coupons.findIndex(c => c.id === id);
+    if (index === -1) {
+      res.status(404).json({ error: 'Coupon not found' });
+      return;
+    }
+    db.coupons[index] = { ...db.coupons[index], ...req.body, id };
+    writeDb(db);
+    res.json(db.coupons[index]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/coupons/:id', (req, res) => {
+  try {
+    const db = readDb();
+    const { id } = req.params;
+    if (!db.coupons) db.coupons = [];
+    db.coupons = db.coupons.filter(c => c.id !== id);
+    writeDb(db);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/coupons/:id/use', (req, res) => {
+  try {
+    const db = readDb();
+    const { id } = req.params;
+    if (!db.coupons) db.coupons = [];
+    const index = db.coupons.findIndex(c => c.id === id);
+    if (index !== -1) {
+      db.coupons[index].usedCount = (db.coupons[index].usedCount || 0) + 1;
+      writeDb(db);
+      res.json(db.coupons[index]);
+    } else {
+      res.status(404).json({ error: 'Coupon not found' });
+    }
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { articles as initialArticles } from './data/articles';
-import { Article } from './types';
+import { Article, Store, Coupon } from './types';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ArticleCard from './components/ArticleCard';
@@ -9,6 +9,8 @@ import Newsletter from './components/Newsletter';
 import AIChatDrawer from './components/AIChatDrawer';
 import AdminPanel from './components/AdminPanel';
 import AuthModal from './components/AuthModal';
+import StoresList from './components/StoresList';
+import StoreDetail from './components/StoreDetail';
 import { Sparkles, Compass, BookOpen, Clock, Heart, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -25,11 +27,6 @@ export default function App() {
     return localStorage.getItem('eloquence_admin_auth') === 'true';
   });
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
-
-  // Enforce premium dark theme & clean up light theme
-  useEffect(() => {
-    document.documentElement.classList.remove('light');
-  }, []);
 
   // Dynamic Full-Stack States
   const [articles, setArticles] = useState<Article[]>(initialArticles);
@@ -83,11 +80,58 @@ export default function App() {
     }
   };
 
+  // Dynamic Stores & Coupons State
+  const [stores, setStores] = useState<Store[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+
+  // Fetch stores
+  const fetchStores = async () => {
+    try {
+      const res = await fetch('/api/stores');
+      if (res.ok) {
+        const data = await res.json();
+        setStores(data);
+      }
+    } catch (err) {
+      console.error('Failed to load stores', err);
+    }
+  };
+
+  // Fetch coupons
+  const fetchCoupons = async () => {
+    try {
+      const res = await fetch('/api/coupons');
+      if (res.ok) {
+        const data = await res.json();
+        setCoupons(data);
+      }
+    } catch (err) {
+      console.error('Failed to load coupons', err);
+    }
+  };
+
+  // Record coupon usage
+  const handleUseCoupon = async (couponId: string) => {
+    try {
+      const res = await fetch(`/api/coupons/${couponId}/use`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        // Refresh coupons to update the counter
+        fetchCoupons();
+      }
+    } catch (err) {
+      console.error('Failed to update coupon use count', err);
+    }
+  };
+
   // Run initial full-stack sync
   useEffect(() => {
     fetchArticles();
     fetchCategories();
     fetchSettings();
+    fetchStores();
+    fetchCoupons();
   }, []);
 
   // URL routing state and synchronization for /admin
@@ -102,6 +146,9 @@ export default function App() {
         setActiveArticleId(null);
       } else {
         setIsAdminOpen(false);
+        if (path === '/stores' || path.startsWith('/store/')) {
+          setActiveArticleId(null);
+        }
       }
     };
 
@@ -122,7 +169,11 @@ export default function App() {
       setActiveArticleId(null);
     } else {
       setIsAdminOpen(false);
+      if (path === '/stores' || path.startsWith('/store/')) {
+        setActiveArticleId(null);
+      }
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Initialize bookmarks from localStorage
@@ -263,6 +314,11 @@ export default function App() {
           navigateTo('/');
         }}
         settings={settings}
+        onNavigateToStores={() => {
+          navigateTo('/stores');
+          setActiveCategory('');
+        }}
+        currentPath={currentPath}
       />
 
       {/* Main Container */}
@@ -291,6 +347,55 @@ export default function App() {
                   navigateTo('/');
                 }}
               />
+            </motion.div>
+          ) : currentPath === '/stores' ? (
+            /* Curated Stores & Vouchers Page */
+            <motion.div
+              key="stores-page"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="pt-[140px] pb-24"
+            >
+              <StoresList
+                stores={stores}
+                coupons={coupons}
+                onStoreClick={(slug) => navigateTo(`/store/${slug}`)}
+              />
+            </motion.div>
+          ) : currentPath.startsWith('/store/') ? (
+            /* Store Details & Promo Codes Page */
+            <motion.div
+              key={`store-detail-${currentPath}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="pt-[140px] pb-24"
+            >
+              {(() => {
+                const slug = currentPath.substring('/store/'.length);
+                const store = stores.find((s) => s.slug === slug);
+                if (!store) {
+                  return (
+                    <div className="text-center py-32 bg-white border border-neutral-200 rounded-2xl max-w-xl mx-auto my-12">
+                      <p className="font-serif text-lg text-neutral-800 uppercase font-bold tracking-wide">Store Registry Not Found</p>
+                      <button onClick={() => navigateTo('/stores')} className="mt-6 px-6 py-3 bg-accent text-white font-mono text-[10px] uppercase tracking-widest hover:opacity-90">
+                        Back to Stores
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <StoreDetail
+                    store={store}
+                    coupons={coupons}
+                    onBackToStores={() => navigateTo('/stores')}
+                    onUseCoupon={handleUseCoupon}
+                  />
+                );
+              })()}
             </motion.div>
           ) : activeArticle ? (
             /* Immersive Reader Detail View */
@@ -425,24 +530,24 @@ export default function App() {
               </section>
 
               {/* Section 3: Imaginative Articles (High Impact Full-Width Backdrop) */}
-              <section className="mb-24 -mx-6 md:-mx-12 bg-black py-20 px-6 md:px-12 overflow-hidden relative border-t border-b border-white/10">
-                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-accent via-transparent to-transparent" />
+              <section className="mb-24 -mx-6 md:-mx-12 bg-white py-20 px-6 md:px-12 overflow-hidden relative border-t border-b border-theme-border/20 shadow-xs">
+                <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-accent via-transparent to-transparent" />
                 <div className="max-w-[1200px] mx-auto relative z-10">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
                     <div className="lg:col-span-5 pr-0 lg:pr-12">
                       <span className="font-mono text-[10px] text-accent tracking-[0.3em] mb-4 block uppercase font-medium">
                         Imaginative Series
                       </span>
-                      <h2 className="font-sans text-5xl md:text-[76px] leading-[0.85] font-black uppercase tracking-tighter mb-8 text-white">
-                        CHRONICLES<br/>OF THE<br/><span className="italic text-white/30">FUTURE SELF</span>
+                      <h2 className="font-sans text-5xl md:text-[76px] leading-[0.85] font-black uppercase tracking-tighter mb-8 text-theme-text">
+                        CHRONICLES<br/>OF THE<br/><span className="italic text-theme-text-muted">FUTURE SELF</span>
                       </h2>
-                      <p className="font-sans text-white/60 text-sm md:text-base mb-10 leading-relaxed">
+                      <p className="font-sans text-theme-text-sub text-sm md:text-base mb-10 leading-relaxed">
                         A deep dive into the fusion of biological elegance and digital precision. Explore how
                         we define humanity in the age of algorithmic refinement and mechanical grace.
                       </p>
                       <button
                         onClick={() => handleArticleClick('24')}
-                        className="px-8 py-3 bg-white text-black text-[12px] font-bold uppercase tracking-widest hover:bg-accent hover:text-white transition-all cursor-pointer rounded-none"
+                        className="px-8 py-3 bg-theme-text text-theme-bg text-[12px] font-bold uppercase tracking-widest hover:bg-accent hover:text-white transition-all cursor-pointer rounded-none"
                       >
                         Read the Dossier
                       </button>
@@ -450,15 +555,15 @@ export default function App() {
                     <div className="lg:col-span-7">
                       <div 
                         onClick={() => handleArticleClick('24')}
-                        className="relative h-[320px] md:h-[500px] group overflow-hidden bg-neutral-950 cursor-pointer border border-white/10"
+                        className="relative h-[320px] md:h-[500px] group overflow-hidden bg-theme-quaternary cursor-pointer border border-theme-border/20"
                       >
                         <img
                           src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80"
                           alt="Futuristic vision"
-                          className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-[2000ms] group-hover:scale-105"
+                          className="absolute inset-0 w-full h-full object-cover opacity-80 transition-transform duration-[2000ms] group-hover:scale-105"
                           referrerPolicy="no-referrer"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-white/20 to-transparent" />
                       </div>
                     </div>
                   </div>
@@ -664,6 +769,10 @@ export default function App() {
       <Footer 
         setActiveCategory={setActiveCategory} 
         onBackToHome={() => setActiveArticleId(null)}
+        onNavigateToStores={() => {
+          navigateTo('/stores');
+          setActiveCategory('');
+        }}
       />
     </div>
   );

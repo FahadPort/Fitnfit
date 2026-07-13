@@ -18,6 +18,8 @@ interface HeaderProps {
   isAuthenticated: boolean;
   onOpenLogin: () => void;
   onLogout: () => void;
+  onNavigateToStores?: () => void;
+  currentPath?: string;
   settings?: {
     logoText: string;
     logoSubtext: string;
@@ -41,6 +43,8 @@ export default function Header({
   isAuthenticated,
   onOpenLogin,
   onLogout,
+  onNavigateToStores,
+  currentPath = '/',
   settings,
 }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
@@ -94,7 +98,27 @@ export default function Header({
           ) : (
             <>
               {/* Desktop Categories */}
-              <nav className="hidden lg:flex items-center gap-6">
+              <nav className="hidden lg:flex items-center gap-5">
+                {onNavigateToStores && (
+                  <button
+                    onClick={onNavigateToStores}
+                    className={`font-mono text-[10px] uppercase tracking-widest transition-all relative py-1 cursor-pointer ${
+                      currentPath === '/stores' || currentPath.startsWith('/store/')
+                        ? 'text-accent font-bold' 
+                        : 'text-theme-text hover:text-accent font-medium'
+                    }`}
+                  >
+                    Stores & Coupons
+                    {(currentPath === '/stores' || currentPath.startsWith('/store/')) && (
+                      <motion.div 
+                        layoutId="activeCategoryDot"
+                        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-accent"
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                  </button>
+                )}
+
                 {displayCategories.slice(0, 4).map((cat) => (
                   <button
                     key={cat}
@@ -418,6 +442,23 @@ export default function Header({
                   <span className="text-[9px] font-mono tracking-[0.3em] text-theme-text-muted uppercase mb-2">
                     Dossiers & Editions
                   </span>
+                  
+                  {onNavigateToStores && (
+                    <button
+                      onClick={() => {
+                        onNavigateToStores();
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`text-left font-serif text-xl py-1 cursor-pointer transition-all flex items-center gap-2 ${
+                        currentPath === '/stores' || currentPath.startsWith('/store/')
+                          ? 'text-accent font-bold italic pl-2' 
+                          : 'text-theme-text hover:text-accent font-medium'
+                      }`}
+                    >
+                      🛍️ Stores & Coupons
+                    </button>
+                  )}
+
                   {displayCategories.map((cat) => (
                     <button
                       key={cat}

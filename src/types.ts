@@ -24,6 +24,31 @@ export interface Bookmark {
   savedAt: string;
 }
 
+export interface Store {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string;
+  description: string;
+  targetUrl: string;
+  category: string;
+  featured?: boolean;
+}
+
+export interface Coupon {
+  id: string;
+  storeId: string;
+  title: string;
+  discount: string;
+  type: 'code' | 'deal';
+  code?: string;
+  description: string;
+  targetUrl: string;
+  verified: boolean;
+  usedCount: number;
+  expiryDate?: string;
+}
+
 export interface NewsletterSubscription {
   email: string;
   preferences: string[];

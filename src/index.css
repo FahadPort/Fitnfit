@@ -2,19 +2,6 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #0A0A0A;
-  --bg-secondary: #121212;
-  --bg-tertiary: #141414;
-  --bg-quaternary: #1A1A1A;
-  --text-primary: #FFFFFF;
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-muted: rgba(255, 255, 255, 0.4);
-  --border-primary: rgba(255, 255, 255, 0.1);
-  --border-secondary: rgba(255, 255, 255, 0.05);
-  --accent: #FF6321;
-}
-
-.light {
   --bg-primary: #FAF9F6; /* Warm alabaster/parchment white */
   --bg-secondary: #FFFFFF; /* Pure white for content cards */
   --bg-tertiary: #F3F2EE; /* Soft grey-beige */
