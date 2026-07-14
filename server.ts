@@ -475,7 +475,14 @@ app.post('/api/assistant', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
     
     // Build context-rich prompt
     let systemInstruction = `You are AURA, the premium, highly sophisticated, and poetically minded AI Literary Assistant of ÉLOQUENCE Magazine.
@@ -515,7 +522,7 @@ Guidelines:
     });
 
     const aiResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash',
       contents: contents,
       config: {
         systemInstruction: systemInstruction,
