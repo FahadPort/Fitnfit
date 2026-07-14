@@ -156,13 +156,15 @@ export default function ArticleDetail({
             <div key={index}>
               {index === 0 ? (
                 // Drop cap for the first paragraph to feel like a luxurious physical magazine
-                <p className="font-sans text-theme-text text-lg md:text-xl leading-relaxed first-letter:text-6xl first-letter:font-serif first-letter:font-semibold first-letter:text-accent first-letter:float-left first-letter:mr-3.5 first-letter:mt-1.5 first-letter:leading-[0.85em]">
-                  {para}
-                </p>
+                <p 
+                  className="font-sans text-theme-text text-lg md:text-xl leading-relaxed first-letter:text-6xl first-letter:font-serif first-letter:font-semibold first-letter:text-accent first-letter:float-left first-letter:mr-3.5 first-letter:mt-1.5 first-letter:leading-[0.85em]"
+                  dangerouslySetInnerHTML={{ __html: para }}
+                />
               ) : (
-                <p className="font-sans text-theme-text-sub text-base md:text-lg leading-relaxed">
-                  {para}
-                </p>
+                <div 
+                  className="font-sans text-theme-text-sub text-base md:text-lg leading-relaxed space-y-4"
+                  dangerouslySetInnerHTML={{ __html: para }}
+                />
               )}
             </div>
           ))}
