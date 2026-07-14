@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Lock, Mail, AlertCircle, Sparkles, KeyRound } from 'lucide-react';
+import { X, Lock, Mail, AlertCircle, Sparkles } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -28,16 +28,10 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
         setEmail('');
         setPassword('');
       } else {
-        setError('Incorrect email or password. Please use the credentials provided below.');
+        setError('Incorrect email or password.');
       }
       setLoading(false);
     }, 800);
-  };
-
-  const handleAutofill = () => {
-    setEmail('admin@eloquence.com');
-    setPassword('admin123');
-    setError('');
   };
 
   return (
@@ -152,31 +146,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
                 </button>
               </form>
 
-              {/* Demo Credentials Box */}
-              <div className="mt-8 pt-6 border-t border-neutral-100 bg-neutral-50 p-4 rounded-xl flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[9px] uppercase tracking-wider text-accent font-bold flex items-center gap-1">
-                    <KeyRound className="w-3.5 h-3.5" /> DEMO WORKSPACE:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleAutofill}
-                    className="font-mono text-[8.5px] text-neutral-500 hover:text-accent uppercase tracking-widest underline decoration-dotted underline-offset-4 cursor-pointer transition-colors"
-                  >
-                    Autofill Credentials
-                  </button>
-                </div>
-                <div className="font-mono text-[10px] text-neutral-600 space-y-1.5 border-t border-neutral-200/60 pt-2.5">
-                  <div className="flex justify-between">
-                    <span className="opacity-70">Email:</span>
-                    <span className="text-neutral-900 font-semibold select-all">admin@eloquence.com</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="opacity-70">Password:</span>
-                    <span className="text-neutral-900 font-semibold select-all">admin123</span>
-                  </div>
-                </div>
-              </div>
+
             </motion.div>
           </div>
         </>
