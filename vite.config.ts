@@ -5,7 +5,23 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(), 
+      tailwindcss(),
+      {
+        name: 'spa-fallback',
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            const url = req.url || '';
+            // If the URL has no file extension and is not an API or uploads path, fallback to index.html
+            if (!url.includes('.') && !url.startsWith('/api') && !url.startsWith('/uploads')) {
+              req.url = '/index.html';
+            }
+            next();
+          });
+        }
+      }
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
