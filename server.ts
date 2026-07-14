@@ -536,6 +536,11 @@ Guidelines:
 
 // Setup Vite Dev Server / Static Asset Serving
 async function startServer() {
+  if (process.env.VERCEL) {
+    console.log('Running on Vercel - exporting app serverless handler.');
+    return;
+  }
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -558,3 +563,5 @@ async function startServer() {
 }
 
 startServer();
+
+export default app;
