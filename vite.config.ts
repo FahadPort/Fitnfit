@@ -13,8 +13,16 @@ export default defineConfig(() => {
         configureServer(server) {
           server.middlewares.use((req, res, next) => {
             const url = req.url || '';
-            // If the URL has no file extension and is not an API or uploads path, fallback to index.html
-            if (!url.includes('.') && !url.startsWith('/api') && !url.startsWith('/uploads')) {
+            const accept = req.headers.accept || '';
+            
+            // Only fallback to index.html for GET requests that expect HTML
+            // and are not targeting API or uploads routes.
+            if (
+              req.method === 'GET' &&
+              accept.includes('text/html') &&
+              !url.startsWith('/api') &&
+              !url.startsWith('/uploads')
+            ) {
               req.url = '/index.html';
             }
             next();
