@@ -40,25 +40,24 @@ const defaultCoupons: Coupon[] = [
   {
     id: 'coupon-1',
     storeId: 'store-1',
-    title: '50% Off Independence Day Sale',
-    discount: '50% OFF',
+    title: 'Up to 60% Off Designer Sale & Clearance',
+    discount: 'UP TO 60% OFF',
     type: 'deal',
-    description: 'Save up to half-off on select summer styles, activewear, and luxury designer lines.',
+    description: 'Save on premium designer apparel, luxury footwear, activewear, beauty, and homeware during the active markdowns event. No code needed.',
     targetUrl: 'https://www.nordstrom.com/sale',
     verified: true,
-    usedCount: 5619
+    usedCount: 6831
   },
   {
     id: 'coupon-2',
     storeId: 'store-1',
-    title: '$20 Off Storewide Anniversary Event',
-    discount: '$20 OFF',
-    type: 'code',
-    code: 'NORDST20',
-    description: 'Apply this code at checkout to enjoy $20 off on your order over $100.',
-    targetUrl: 'https://www.nordstrom.com',
+    title: 'Join The Nordy Club for a $10 Bonus Note',
+    discount: '$10 BONUS',
+    type: 'deal',
+    description: 'Sign up for free to join The Nordy Club. Earn reward points on all purchases and unlock a $10 bonus promotional Note.',
+    targetUrl: 'https://www.nordstrom.com/nordy-club',
     verified: true,
-    usedCount: 1245
+    usedCount: 4120
   },
   {
     id: 'coupon-3',
