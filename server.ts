@@ -434,6 +434,13 @@ app.post('/api/upload', (req, res) => {
     const filename = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}${ext}`;
     const filePath = path.join(UPLOADS_DIR, filename);
     fs.writeFileSync(filePath, buffer);
+
+    // Also save to public/uploads/ for static build integration if the folder exists
+    const publicUploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    if (fs.existsSync(publicUploadsDir)) {
+      fs.writeFileSync(path.join(publicUploadsDir, filename), buffer);
+    }
+
     res.json({ url: `/uploads/${filename}` });
   } catch (err: any) {
     console.error('Upload failed:', err);
