@@ -1,6 +1,36 @@
 import { Article, Store, Coupon } from '../types';
 import { articles as initialArticles } from '../data/articles';
 
+// Helper function to dynamically migrate any stale local upload paths to Unsplash URLs on Vercel/production
+function migrateUploads(data: any): any {
+  if (!data) return data;
+  let str = JSON.stringify(data);
+  const urlMappings: { [key: string]: string } = {
+    '/uploads/kinetic_resistance.jpg': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1200&q=80',
+    'uploads/kinetic_resistance.jpg': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1200&q=80',
+    '/uploads/fabric_resistance_bands.jpg': 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80',
+    'uploads/fabric_resistance_bands.jpg': 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80',
+    '/uploads/cork_yoga_mat.jpg': 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=600&q=80',
+    'uploads/cork_yoga_mat.jpg': 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=600&q=80',
+    '/uploads/smart_water_bottle.jpg': 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80',
+    'uploads/smart_water_bottle.jpg': 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80',
+    '/uploads/breath_pilates.jpg': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1200&q=80',
+    'uploads/breath_pilates.jpg': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1200&q=80',
+    '/uploads/somatic_running.jpg': 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1200&q=80',
+    'uploads/somatic_running.jpg': 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1200&q=80'
+  };
+
+  let migrated = false;
+  Object.keys(urlMappings).forEach(key => {
+    if (str.includes(key)) {
+      str = str.split(key).join(urlMappings[key]);
+      migrated = true;
+    }
+  });
+
+  return migrated ? JSON.parse(str) : data;
+}
+
 // Default Stores matching server.ts
 const defaultStores: Store[] = [
   {
@@ -111,18 +141,20 @@ export const storageService = {
       const res = await fetch('/api/articles');
       if (res.ok) {
         const data = await safeJsonParse(res);
-        localStorage.setItem('eloquence_articles', JSON.stringify(data));
-        return data;
+        const migratedData = migrateUploads(data);
+        localStorage.setItem('eloquence_articles', JSON.stringify(migratedData));
+        return migratedData;
       }
     } catch (e) {
       console.warn('API error fetching articles, loading from localStorage:', e);
     }
     const local = localStorage.getItem('eloquence_articles');
     if (local) {
-      return JSON.parse(local);
+      return migrateUploads(JSON.parse(local));
     }
-    localStorage.setItem('eloquence_articles', JSON.stringify(initialArticles));
-    return initialArticles;
+    const migratedInitial = migrateUploads(initialArticles);
+    localStorage.setItem('eloquence_articles', JSON.stringify(migratedInitial));
+    return migratedInitial;
   },
 
   async saveArticle(article: any, editingId?: string): Promise<Article> {
@@ -292,18 +324,20 @@ export const storageService = {
       const res = await fetch('/api/stores');
       if (res.ok) {
         const data = await safeJsonParse(res);
-        localStorage.setItem('eloquence_stores', JSON.stringify(data));
-        return data;
+        const migratedData = migrateUploads(data);
+        localStorage.setItem('eloquence_stores', JSON.stringify(migratedData));
+        return migratedData;
       }
     } catch (e) {
       console.warn('API error fetching stores, loading from localStorage:', e);
     }
     const local = localStorage.getItem('eloquence_stores');
     if (local) {
-      return JSON.parse(local);
+      return migrateUploads(JSON.parse(local));
     }
-    localStorage.setItem('eloquence_stores', JSON.stringify(defaultStores));
-    return defaultStores;
+    const migratedStores = migrateUploads(defaultStores);
+    localStorage.setItem('eloquence_stores', JSON.stringify(migratedStores));
+    return migratedStores;
   },
 
   async saveStore(store: any, editingId?: string): Promise<Store> {
@@ -373,18 +407,20 @@ export const storageService = {
       const res = await fetch('/api/coupons');
       if (res.ok) {
         const data = await safeJsonParse(res);
-        localStorage.setItem('eloquence_coupons', JSON.stringify(data));
-        return data;
+        const migratedData = migrateUploads(data);
+        localStorage.setItem('eloquence_coupons', JSON.stringify(migratedData));
+        return migratedData;
       }
     } catch (e) {
       console.warn('API error fetching coupons, loading from localStorage:', e);
     }
     const local = localStorage.getItem('eloquence_coupons');
     if (local) {
-      return JSON.parse(local);
+      return migrateUploads(JSON.parse(local));
     }
-    localStorage.setItem('eloquence_coupons', JSON.stringify(defaultCoupons));
-    return defaultCoupons;
+    const migratedCoupons = migrateUploads(defaultCoupons);
+    localStorage.setItem('eloquence_coupons', JSON.stringify(migratedCoupons));
+    return migratedCoupons;
   },
 
   async saveCoupon(coupon: any, editingId?: string): Promise<Coupon> {
